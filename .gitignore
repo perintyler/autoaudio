@@ -1,0 +1,13 @@
+__pycache__/
+audacity/
+distant_speech_recognition/
+ESC-50-master/
+noise_reduction/
+processed/
+testaudio/
+VAD-python/
+venv/
+audio-classification/
+pyAudioAnalysis/
+.bashrc
+notes.txt
