@@ -4,6 +4,8 @@ import os
 from shutil import copyfile
 import settings
 
+
+
 def stereo_to_mono(infile, file_type='wav'):
     sound = AudioSegment.from_file(infile, format=file_type)
     sound = sound.set_channels(1)
@@ -58,12 +60,20 @@ def get_file_count(dir):
 def is_dir_empty(dir):
     return get_file_count(dir) == 0
 
-def get_label_index(label):
-    return settings.label_indecies[label]
 
+def get_label_index(label):
+    # index labels by sorted location in directory
+    subdirs = os.listdir(settings.training_data_dir)
+    subdirs.sort()
+    return subdirs.index(label)
 
 def get_training_data_dir(label):
     dir = f'{settings.training_data_dir}/{label}/'
     # Check to see if the directory exists and is not empty
     training_data_exists = os.path.isdir(dir) and not is_dir_empty(dir)
     return dir, training_data_exists
+
+
+def num_training_files(label):
+    dir, data_exists = get_training_data_dir(label)
+    return len([fn for fn in os.listdir(dir) if not fn.endswith('.asd')])

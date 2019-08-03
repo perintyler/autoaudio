@@ -36,4 +36,6 @@ class Note:
         return
 
 # A 'note' has an attack, a hold time, and then a slow death time
-# The hold time will probably be the hardest caviat in this idea
+# The hold time will probably be the hardest caviat in this idea because
+# the attack should be a smooth (exponential? / inverse of decay log func?) and
+# the decay should be a smoth log function. Holding notes can change un frequency/amplitude

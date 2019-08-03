@@ -14,6 +14,7 @@ sample_rate = 48000
 
 silent_segment = AudioSegment.silent(duration=frame_size*3, # nooo idea why its x3 lol
                                         frame_rate=sample_rate)
+                                        
 # set this frames bytes to be the silent audio raw data bytes
 silent_frame_bytes = silent_segment.raw_data
 

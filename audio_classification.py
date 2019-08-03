@@ -5,7 +5,7 @@
 # Date  : 2017-12-03
 #
 
-import feature_extraction
+# import feature_extraction
 # from feat_extract import *
 import time
 import argparse
@@ -21,50 +21,24 @@ import os
 import os.path as op
 from sklearn.model_selection import train_test_split
 import file_utils
-
 import sys
+import settings
 
-# Extracts features from the training data for the given labe
-# The features are stored as 2 .npy files
-def extract_features(label, feature_file, label_file, file_ext='.wav'):
-    data_dir, data_exists = file_utils.get_training_data_dir(label)
-    if(data_exists == False):
-        # gathering training data is custom so if the data does not exist,
-        # there is nothing that can be done.
-        raise Exception(f"Training data for {label} does not exists. Cannot extract features")
+import feature_extraction
 
-    # features, labels = feature_extraction.parse_audio_files('training_data', file_ext=file_ext)
-    features, labels = feature_extraction.parse_audio(label, data_dir, file_ext=file_ext)
+def model_exists():
+    return not file_utils.is_dir_empty(settings.model_dir)
 
-    # features, labels = feature_extraction.parse_audio_files(data_dir, file_ext=file_ext)
-    np.save(feature_file, features)
-    np.save(label_file, labels)
-
-    # Predict new
-    features, filenames = feature_extraction.parse_predict_files('predict')
-    feature_pfile, filename_pfile = file_utils.get_prediction_files(label)
-    np.save(feature_pfile, features)
-    np.save(filename_pfile, filenames)
-
-
-def create_model(label):
-    feature_file, label_file, features_exist = file_utils.get_feature_files(label)
-    if(features_exist == False):
-        extract_features(label, feature_file, label_file)
-
-    X = np.load(feature_file)
-    y = np.load(label_file).ravel()
-
-    print('x', X.shape)
-    print('y', y.shape)
-    sys.exit(0)
+def train_classifier(features_file, labels_file):
+    X = np.load(features_file)
+    y = np.load(labels_file).ravel()
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=233)
 
-    data_dir, data_exists = file_utils.get_training_data_dir(label)
+    # data_dir, data_exists = file_utils.get_training_data_dir(label)
     # class_count = file_utils.get_file_count(data_dir)
-    class_count = 1 # number of labels
-    batch_size = file_utils.get_file_count(data_dir)
+    class_count = 50 # number of labels
+    batch_size = 40
     epochs = 500
 
     # Build the Neural Network
@@ -88,10 +62,6 @@ def create_model(label):
 
     start = time.time()
 
-    print('batch_size', batch_size)
-    print('x shape', X_train.shape)
-    print('y shape', y_train.shape)
-    sys.exit(0)
     model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs)
     score, acc = model.evaluate(X_test, y_test, batch_size=16)
 
@@ -99,12 +69,10 @@ def create_model(label):
     print('Test accuracy:', acc)
     print('Training took: %d seconds' % int(time.time() - start))
 
-    model_file = file_utils.get_classification_model(label)
-    model.save(model_file)
+    model.save(f'{settings.model_dir}/model.h5')
     return model
 
 def predict(model):
-
     predict_feat_path = 'predict_feat.npy'
     predict_filenames = 'predict_filenames.npy'
     filenames = np.load(predict_filenames)
@@ -113,24 +81,20 @@ def predict(model):
     pred = model.predict_classes(X_predict)
     for pair in list(zip(filenames, pred)): print(pair)
 
-def classify(label):
-    model_file, model_exists = file_utils.get_classification_model(label)
-    model = load_model(model_file) if model_exists else create_model(label)
-    predict(model)
-
 if __name__ == '__main__':
-    classify('breathing')
-    # parser = argparse.ArgumentParser(description=__doc__)
-    # parser.add_argument('-t', '--train',             action='store_true',                           help='train neural network with extracted features')
-    # parser.add_argument('-m', '--model',             metavar='path',     default='trained_model.h5',help='use this model path on train and predict operations')
-    # parser.add_argument('-e', '--epochs',            metavar='N',        default=500,              help='epochs to train', type=int)
-    # parser.add_argument('-p', '--predict',           action='store_true',                           help='predict files in ./predict folder')
-    # parser.add_argument('-P', '--real-time-predict', action='store_true',                           help='predict sound in real time')
-    # parser.add_argument('-v', '--verbose',           action='store_true',                           help='verbose print')
-    # parser.add_argument('-s', '--log-speed',         action='store_true',                           help='performance profiling')
-    # parser.add_argument('-b', '--batch-size',        metavar='size',     default=64,                help='batch size', type=int)
-    # args = parser.parse_args()
-    # main(args)
+    # Get features file. If features haven't been extracted yet, prompt user
+    # if it should be down now. If so, extract features and then train.
+    feature_file, label_file, features_extracted = feature_extraction.get_feature_files()
+    if features_extracted:
+        train_classifier(feature_file, label_file)
+    else:
+        print('Features need to be extracted. Extract Features now? (y/n)')
+        user_input = input()
+        if user_input == 'y':
+            feature_extraction.extract_features()
+            train_classifier(feature_file, label_file)
+        else:
+            print('Cannot train model without extracted features. Exiting.')
 
 
 # This would be for streaming I assume
