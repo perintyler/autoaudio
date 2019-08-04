@@ -1,6 +1,16 @@
 # Split an audio file into multiple audio file each consiting of an
 # individual attack
 
+from pydub import AudioSegment
+
+sound = AudioSegment.from_file('training_data/breathing/breathing_0.wav')
+
+
+sound_levels = sound.dBFS
+print(sound.raw_data)
+
+
+
 
 
 # The attack starts when amplitude starts increasing. Once a decrease of
@@ -11,6 +21,15 @@ def find_attacks():
     return []
 
 
+def cut_file(seconds): # seconds can be a double
+    cut_point = seconds * 1000
+    sound = AudioSegment.from_file(AUDIO_FILE)
+
+    first = sound[:cut_point]
+    second = sound[:cut_point]
+
+    # create a new file "first_half.mp3":
+    first_half.export("/path/to/first_half.mp3", format="mp3")
 # If amplitude does not reach 0 (or baseline amplitude before attack) after a
 # attack starts, then it is not a complete 'note'
 
