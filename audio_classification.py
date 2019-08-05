@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding= UTF-8
-#
-# Author: Fing
-# Date  : 2017-12-03
-#
 
 # import feature_extraction
 # from feat_extract import *

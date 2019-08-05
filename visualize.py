@@ -4,25 +4,38 @@ import matplotlib.pyplot as plt
 import librosa
 import librosa.display
 
+from mpl_toolkits import mplot3d
+
 
 # By default, librosa will resample the signal to 22050Hz.  You can
 # change this behavior by saying: librosa.load(audio_path, sr=44100)
 # audio_path = 'processed.wav'
+#
+def frequency_amplitude_graph(arr, duration):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    # X data should be time
+    # Y data is the different frequencies
+    # Z data is the amplitude
+    ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
+    return
 
 
-def show_spectogram(audio_path):
+def spectogram(audio_path, show=True):
     y, sr = librosa.load(audio_path)
 
     # Convert to log scale (dB). We'll use the peak power (max) as reference.
     S = librosa.feature.melspectrogram(y, sr=sr, n_mels=128)
     log_S = librosa.power_to_db(S, ref=np.max)
-    plt.figure(figsize=(12,4))
-    librosa.display.specshow(log_S, sr=sr, x_axis='time', y_axis='mel')
-    plt.title('mel power spectrogram')
-    plt.colorbar(format='%+02.0f dB')
+    if show:
+        plt.figure(figsize=(12,4))
+        librosa.display.specshow(log_S, sr=sr, x_axis='time', y_axis='mel')
+        plt.title('mel power spectrogram')
+        plt.colorbar(format='%+02.0f dB')
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
+    return log_S
 
 
 def show_chromagram(audio_path):
