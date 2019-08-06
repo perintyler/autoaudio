@@ -7,8 +7,167 @@ import numpy as np
 import matplotlib.pyplot as plt
 # sound = AudioSegment.from_file(file_path)
 import visualize
+import scipy
+
+# https://en.wikipedia.org/wiki/Envelope_(music)
+# 
+# class Phase(Enum):
+#     ATTACK = 0
+#     DECAY = 1
+#     SUSTAIN = 2
+#     RELEASE = 3
+#
+# # Does every sound go through every phase
+#
+# class ConvexHull:
+#
+#     def __init__(self, p0):
+#         self.phase = Phase.ATTACK
+#         self.y_min, self.y_max = p0, p0
+#         self.upper = [p0]
+#         self.lower = [p0]
+#         self.phase_markers = []
+#
+#     def constrains(self, y_val):
+#         return self.y_min < y_val and self.y_max > y_val
+#
+#     # since after an attack the wave is always decaying, removing the y_max
+#     # means a new phase has begun
+#     def add_points(self, points):
+#         y_min, y_max = points.max(), points.min()
+#         if self.phase == Phase.ATTACK:
+#             upper_hull_change = self.upper[-1][1] - self.upper[-2][1]
+#             lower_hull_change = self.lower[-1][1] - self.lower[-2][1]
+#             if upper_hull_change < 0 and lower_hull_change > 0:
+#                 attack_end = min(self.upper[-1][0], self.lower[-1][0])
+#                 self.phase_markers.append(attack_end)
+#             self.phase = Phase.DECAY
+#         elif self.phase == Phase.DECAY:
+#             # while its decaying, if you have to remove a point from the hull
+#             # then a new phase has started
+#             return
+#         else: # decay
+#             return
+#         # elif self.phase = SoundPhase.DECAY:
+#         #     return
+#         # elif self.phase = SoundPhase.SUSTAIN:
+#         #     return
+#         # else: # DECAY
+#         #     return
+#
+#
+#     class Result(Enum):
+#         INSIDE = 0
+#         ON = 1
+#         Y_
+#     def add_point():
+#
+#
+#
+#     def is_point_inside(self, pnt):
+#         return
+#
+#     def rate_of_change(self):
+#         upper_hull_change = self.upper[-1] - self.upper[-2]
+#         lower_hull_change = self.lower[-1] - self.lower[-2]
+#
+#
+# class SignalStream:
+#
+#     def __init__(self, sampe_rate):
+#         self.decaying = False
+#         self.attacks = []
+#         self.previous_hulls = []
+#         self.hull = ConvexHull()
+#         self.upper_hull = []
+#         self.lower_hull = []
+#         return
+#
+#     def add_frame(self, f):
+#         attack_found = False
+#         for x,y in f.points():
+#             if not self.hull.constrains(y):
+#                 self.previous_hulls.append(self.hull)
+#                 self.hull = ConvexHull()
+#                 attack_found = True
+#                 attack_start = x-1
+#
+#         if not attack_found:
+#             self.hull.add_points(f.points())
+#             upper_decay, lower_decay = self.hull.get_y_change()
+#
+#
+#         else:
+#
+#
+#         attack_found = self.dosomething()
+#         if attack_found:
+#             self.decaying = False
+#
+#         return
+#
+#     def add_point_to_hull(self, amplitude, upper):
+#         pnt = self.add_sample(amplitude)
+#         # if pnt is in hull do nothing
+#         if not self.is_point_in_hull(pnt):
+#             # find upper tangent
+#             hull = self.upper_hull if upper else self.lower_hull
+#             while(pnt.tangent(neighbor).crosses_inside(hull)):
+#                 self.upper_hull.remove(neighbor)
+#                 neighbor = self.upper_hull.last
+#             neighbor = self.lower_hull.last
+#             while(pnt.tangent(neighbor).crosses_inside(hull)):
+#                 self.lower_hull.remove(neighbor)
+#                 neighbor = self.lower_hull.last
+#
+#     def is_point_in_hull(self, pnt):
+#         #
+#         return
+#
+#     def get_baseline_amplitude(self):
+#         return
+#
+#     def get_attack_points(self):
+#         return self.attacks
+#
+#
+#
+# def isolate_notes():
+#
+#     return
+#
+# def find_next_attack(amplitudes, start_index, end_index, hull):
+#     frame_size = 10
+#     for i in range(start_index, end_index, frame_size):
+#         frame = amplitudes[i:frame_size]
+#
+#     return
 
 
+
+
+def get_2d_signal(amplitudes, sr, plot=False):
+    duration = sr * len(amplitudes)
+    time_axis = np.arange(0., duration, sr)
+    if plot:
+        plt.plot(time_axis, amplitudes)
+    return np.column_stack( (time_axis, amplitudes) )
+
+
+def get_outline(signal, plot=False):
+    hull = scipy.spatial.ConvexHull(signal)
+    if plot:
+        # add the first point to the end of vertices to close the outline
+        outline = np.append(hull.vertices, hull.vertices[0])
+        plt.plot(signal[outline,0], signal[outline,1], 'r--', lw=1)
+    # x = list(map(lambda simplex: signal[simplex, 0], hull.simplices))
+    # y = list(map(lambda simplex: signal[simplex, 1], hull.simplices))
+    return signal[hull.vertices,0], signal[hull.vertices,1]
+
+
+# Find repetitive cycle first start and end
+def find_cycles(signal, sr):
+    return
 
 def find_inflections(signal, sr):
     last_amplitude = signal.pop(0)
@@ -26,32 +185,6 @@ def find_inflections(signal, sr):
         t += sr
 
     return {k: v for k, v in inflections.items() if v > 0}
-
-
-
-file_path = 'testaudio/split.wav' #'training_data/breathing/breathing_0.wav'
-spf = wave.open(file_path, 'r')
-sr = spf.getframerate()
-signal = spf.readframes(-1)
-signal = np.fromstring(signal, 'Int16')
-
-# inflections = find_inflections(signal.tolist(), sr)
-#
-# plt.plot(list(inflections.keys()), list(inflections.values()))
-# plt.show()
-
-
-
-# signal = np.absolute(signal)
-#
-# plt.figure(1)
-# plt.title('Signal Wave...')
-# plt.plot(signal, 'k')
-# plt.show()
-
-# spectogram = visualize.spectogram(file_path, show=True)
-# freq_arr = np.array(spectogram)
-# print(freq_arr.shape)
 
 def cut_file(file, seconds): # seconds can be a double
     cut_point = seconds * 1000
@@ -87,6 +220,52 @@ def find_repeated_segment():
 
 
 # It would be cool to be able to tell if an audio clip contains isolate 'notes'
+
+
+if __name__ == '__main__':
+
+
+    file_path = 'testaudio/trimmed2.wav' #'training_data/breathing/breathing_0.wav
+    spf = wave.open(file_path)
+    sr = spf.getframerate()
+    amplitudes = np.fromstring(spf.readframes(-1), 'Int16')
+
+    # Make all negative amps positive with absolute value
+    amplitude = np.absolute(amplitude)
+    signal = get_2d_signal(amplitudes, sr, plot=True)
+
+    x, y = get_outline(signal, plot=True)
+    plt.show()
+    # print(outline)
+    #
+    # plt.plot(x, y)
+
+    # inflections = find_inflections(signal.tolist(), sr)
+    #
+    # plt.plot(list(inflections.keys()), list(inflections.values()))
+    # plt.show()
+
+
+
+    # signal = np.absolute(signal)
+    #
+    # plt.figure(1)
+    # plt.title('Signal Wave...')
+    # plt.plot(signal, 'k')
+    # plt.show()
+
+    # spectogram = visualize.spectogram(file_path, show=True)
+    # freq_arr = np.array(spectogram)
+    # print(freq_arr.shape)
+
+
+
+
+
+
+
+
+
 
 
 
