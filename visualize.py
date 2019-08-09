@@ -21,13 +21,13 @@ def frequency_amplitude_graph(arr, duration):
     return
 
 
-def spectogram(audio_path, show=True):
+def spectogram(audio_path, plot=True):
     y, sr = librosa.load(audio_path)
 
     # Convert to log scale (dB). We'll use the peak power (max) as reference.
     S = librosa.feature.melspectrogram(y, sr=sr, n_mels=128)
     log_S = librosa.power_to_db(S, ref=np.max)
-    if show:
+    if plot:
         plt.figure(figsize=(12,4))
         librosa.display.specshow(log_S, sr=sr, x_axis='time', y_axis='mel')
         plt.title('mel power spectrogram')

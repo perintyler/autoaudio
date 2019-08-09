@@ -6,11 +6,12 @@ import settings
 
 
 
-def stereo_to_mono(infile, file_type='wav'):
+def stereo_to_mono(infile, outfile=None, file_type='wav'):
     sound = AudioSegment.from_file(infile, format=file_type)
     sound = sound.set_channels(1)
     # remove filetype, ammend name, add on file type
-    outfile = infile[:(len(file_type) + 1)] + '-mono.' + file_type
+    if outfile is None:
+        outfile = infile[:(len(file_type) + 1)] + '-mono.' + file_type
     sound.export(outfile, format=file_type)
     return outfile
 
