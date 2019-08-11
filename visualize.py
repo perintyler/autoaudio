@@ -10,31 +10,57 @@ items = []
 
 lines = []
 
-
-
 class GraphItem:
 
+    all = []
 
     def __init__(self, points, color, point_type, plt_params={}):
         self.plt_arg = f'{color}{point_type}'
         self.plt_params = plt_params
         self.points = points
         self.drawn = []
+        GraphItem.all.append(self)
 
     def is_drawn(self):
         return len(self.drawn) != 0
 
     def draw(self):
-        for point in self.points:
-            x, y = point[0], point[1]
-            plt_obj, = plt.plot(x, y, self.plt_arg, **self.plt_params)
-            self.drawn.append(plt_obj)
+    #    args = self.plt_arg if not self.plt_params else **self.plt_params
+        #drawn_objects = plt.plot(self.points[0], self.points[1], self.plt_arg, **self.plt_params)
+        # if not self.plt_params:
+        #     drawn_objects = plt.plot(self.points[0], self.points[1], **self.plt_params)
+        # else:
+        #     drawn_objects = plt.plot(self.points[0], self.points[1], self.plt_arg)
+        drawn_objects = plt.plot(self.points[0], self.points[1], self.plt_arg, **self.plt_params)
+
+        self.drawn.extend(drawn_objects)
+        # for point in self.points:
+        #     x, y = point[0], point[1]
+        #     plt_obj, = plt.plot(x, y, self.plt_arg, **self.plt_params)
+        #     self.drawn.append(plt_obj)
         return self
 
     def delete(self):
         for plt_obj in self.drawn:
             plt_obj.remove()
         self.drawn = []
+
+    def set_tag(self, tag):
+        self.tag = tag if isinstance(tag, str) else str(tag)
+
+    def get_tag(self):
+        if not hasattr(self, 'tag'): return '*'
+        else: return self.tag
+
+    @staticmethod
+    def get_all(tag):
+        tag_str = tag if isinstance(tag, str) else str(tag)
+        tagged = []
+        for item in GraphItem.all:
+            if item.get_tag() == tag:
+                tagged.append(tag)
+        return tagged
+
 
 class Point(GraphItem):
     all = {}
@@ -43,7 +69,7 @@ class Point(GraphItem):
         self.item_type = 'point'
         points = [(x,y)]
         point_type = '.'
-        params = {'s': point_size}
+        params = {'markersize': point_size}
         super().__init__(points, color, point_type, plt_params=params)
         Point.all[(x,y)] = self
 
@@ -55,28 +81,44 @@ class Point(GraphItem):
 # TODO line plot and linear line should be the same class
 class LinePlot(GraphItem):
 
-    def __init__(self, points, color, linestyle='dashed', linewidth=1):
+    all = []
+
+    def __init__(self, points, color='r', dashed=False, linewidth=1):
         self.item_type = 'line'
-        point_type = '-'
-        params = {'linestyle': linestyle, 'linewidth': linewidth }
+        point_type = '-' if dashed else '--'
+        params = { 'linewidth': linewidth }
+        # if dashed: params['linestyle': 'dashed']
+        # x_vals = list(map(lambda p: p[0], points))
+        # y_vals = list(map(lambda p: p[1], points))
+        # formatted_points = [x_vals, y_vals]
         super().__init__(points, color, point_type, plt_params=params)
 
-    def draw(self):
-        x_vals = list(map(lambda p: p[0], self.points))
-        y_vals = list(map(lambda p: p[1], self.points))
-        line, = plt.plot(x_vals, y_vals, **self.plt_params)
-        self.drawn.append(line)
-        return self
+        LinePlot.all.append(self)
+
+    @staticmethod
+    def draw_function(f, x0, x1, step_size=1, color='r'):
+        x_vals = list(range(x0, x1, step_size))
+        y_vals = list(map(lambda x: f(x), x_vals))
+        return LinePlot([x_vals, y_vals], color).draw()
+
+    # def draw(self):
+    #     x_vals = list(map(lambda p: p[0], self.points))
+    #     y_vals = list(map(lambda p: p[1], self.points))
+    #     line, = plt.plot(x_vals, y_vals, **self.plt_params)
+    #     self.drawn.append(line)
+    #     return self
 
 class LinearLine(GraphItem):
 
-    def __init__(self, f, x0, x1, dx, color):
+    def __init__(self, f, x0, x1, dx, color, line_width=0.01, dashed=True):
         self.item_type = 'line'
         x_values = range(x0, x1, dx)
         get_point = lambda x: (x, f(x))
         points = list(map(get_point, x_values))
         point_type = '.' # pixel point value
-        super().__init__(points, color, point_type, plt_params={'markersize': 0.1})
+        params = {'markersize': 0.3} #{'linewidth': line_width}
+        # if dashed: params['linestyle'] = 'dashed'
+        super().__init__(points, color, point_type, plt_params=params)
 
 
 

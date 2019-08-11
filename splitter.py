@@ -12,138 +12,10 @@ from enum import Enum
 from pyAudioAnalysis import audioFeatureExtraction
 import librosa
 
-from visualize import Point, LinearLine, VerticalLine, LinePlot
+# from visualize import Point, LinearLine, VerticalLine, LinePlot, GraphItem
 
 
 TRANSIENT_MAX = 5000 # Guessing here. half a second
-
-
-# # Reversed sound fucks this all up
-# class Envelope:
-#     def __init__(self):
-#         self.phases = 0
-#
-#
-# # https://en.wikipedia.org/wiki/Envelope_(music)
-# class Phase(Enum):
-#     ATTACK = 0
-#     DECAY = 1
-#     SUSTAIN = 2
-#     RELEASE = 3
-#
-
-
-# # end of attack happens at lowest added new hull point in decay phase
-# class SignalStream:
-#
-#     def __init__(self, sampe_rate):
-#         self.decaying = False
-#         self.attacks = []
-#         self.previous_hulls = []
-#         self.hull = ConvexHull()
-#         self.upper_hull = []
-#         self.lower_hull = []
-#         self.baseline = 0
-#
-#
-#     def add_frame(self, f):
-#         attack_found = False
-#         for x,y in f.points():
-#             if not self.hull.constrains(y):
-#                 self.previous_hulls.append(self.hull)
-#                 self.hull = ConvexHull()
-#                 attack_found = True
-#                 attack_start = x-1
-#
-#         if not attack_found:
-#             self.hull.add_points(f.points())
-#             upper_decay, lower_decay = self.hull.get_y_change()
-#
-#
-#         else:
-#             return
-#
-#         attack_found = self.dosomething()
-#         if attack_found:
-#             self.decaying = False
-#
-#         return
-#
-#     def add_point_to_hull(self, amplitude, upper):
-#         pnt = self.add_sample(amplitude)
-#         # if pnt is in hull do nothing
-#         if not self.is_point_in_hull(pnt):
-#             # find upper tangent
-#             hull = self.upper_hull if upper else self.lower_hull
-#             while(pnt.tangent(neighbor).crosses_inside(hull)):
-#                 self.upper_hull.remove(neighbor)
-#                 neighbor = self.upper_hull.last
-#             neighbor = self.lower_hull.last
-#             while(pnt.tangent(neighbor).crosses_inside(hull)):
-#                 self.lower_hull.remove(neighbor)
-#                 neighbor = self.lower_hull.last
-#
-#     def is_point_in_hull(self, pnt):
-#         #
-#         return
-#
-#     def get_baseline_amplitude(self):
-#         return
-#
-#     def get_attack_points(self):
-#         return self.attacks
-#
-#
-#
-# # Match and peaks are for finding when a wave pattern repeats. Even though
-# # overall amplitudes decay, the slope at every point should not change
-# # Repeated patterns can be used to find decay time
-# # This shit won't work
-# def match(changes, amplitudes):
-#     matching = False
-#     match_found = False
-#     match_start = 0
-#     index = 0
-#     num_points = len(amplitudes)
-#     num_changes = len(changes)
-#     for index in range(num_points - num_changes):
-#         difference = point[index+1] - point[index]
-#         if difference == changes[0]:
-#             match_start = index
-#             matching = True
-#             for match_index in range(match_start, num_changes):
-#                 difference = point[match_index+1] - point[match_index]
-#                 if difference == changes[match_index - start_index]:
-#                     matching = False
-#                     break
-#             if matching: return match_start
-#             else: continue
-#     return -1
-#
-# def find_peaks():
-#     return
-#
-# def match_peaks():
-#     return
-#
-# def get_peak_derivative(peaks):
-#     changes = []
-#     for index in range(0, len(peaks)):
-#         if index == len(peaks): difference = peaks[0] - peaks[i]
-#         else: difference = peaks[i+1] - peaks[i]
-#         changes.append(difference)
-#     return changes
-#
-# def isolate_notes():
-#
-#     return
-#
-# def find_next_attack(amplitudes, start_index, end_index, hull):
-#     frame_size = 10
-#     for i in range(start_index, end_index, frame_size):
-#         frame = amplitudes[i:frame_size]
-#
-#     return
 
 class Sample:
 
@@ -157,61 +29,73 @@ class Sample:
         return lambda time: slope*time + y_intercept
 
     @staticmethod
-    def get_list(signal, sr):
-        num_samples = len(signal)
-        return [Sample(signal[i], sr*i) for i in range(num_samples)]
+    def get_list(amplitudes, sr):
+        num_samples = len(amplitudes)
+        return [Sample(amplitudes[i], sr*i) for i in range(num_samples)]
+
+    @staticmethod
+    def get_list_from_points(signal):
+        samples = map(lambda p: Sample(p[0],p[1]), signal)
+        return list(samples)
+
+    @staticmethod
+    def split(samples):
+        t_vals = map(lambda s: s.t, samples)
+        amp_vals = map(lambda s: s.amplitude, samples)
+        return list(t_vals), list(amp_vals)
+
+# may not need a class for this
+class Profile:
+
+    def __init__(self):
+        self.density = []
+        self.energy = []
+        self.frequencies = []
+        return
 
 # Does every sound go through every phase
-class Phase: # this should be called phase
+class Phase:
 
-
-    def __init__(self, sr, decaying, animate=False):
+    def __init__(self, sr, decaying, animate=False, floor=20):
         self.sr = sr
         self.decaying = decaying
         self.hull = []
         self.max_index = -1
-
-
-        self.graph_items = []
         self.animate = animate
+        self.floor = floor
 
     def growth_rate(self):
         return
 
+    # Since points are fed in chronological order, point.x is always
+    # going to be larger than the lastHullPoint.x. Therefore, each new
+    # point is garunteed to be outside the hull, and must be added. The
+    # role of this method is to remove hull points if adding the new
+    # point requires so
     # https://www.geeksforgeeks.org/dynamic-convex-hull-adding-points-existing-convex-hull/
-    def update_hull(self, new_point):
-        # Since points are fed in chronological order, point.x is always
-        # going to be larger than the lastHullPoint.x. Therefore, each new
-        # point is garunteed to be outside the hull, and must be added. The
-        # role of this method is to remove hull points if adding the new
-        # point requires so
-        if self.hull_size() > 2:
-            def tangent(p0, p1):
-                slope = (p1[1] - p0[1])/(p1[0] - p0[0])
-                y_intercept = p1[1] - slope*p1[0]
-                return lambda time: slope*time + y_intercept
+    def update_hull(self, sample):
+        hull_size = self.hull_size()
+        if hull_size == 0 and sample.amplitude < self.floor:
+            return
 
+        if hull_size > 1:
 
-            for hull_index in range(self.hull_size() - 1, 1, -1):
+            for hull_index in range(self.hull_size() - 1, 0, -1):
                 hull_pnt = self.hull[hull_index]
 
-                # Get the tangent line of the new point and the last hull point
-                point_tangent = tangent(hull_pnt, new_point)
-                # Get the tangent line of the last hull point and second to last hull point
-                hull_tangent = tangent(self.hull[hull_index-1], hull_pnt)
-
-                if self.animate:
-                    for item in self.graph_items:
-                        if item.item_type == 'line': item.delete()
-                    l0 = LinearLine(point_tangent, hull_pnt[0], new_point[0], self.sr, color='m').draw()
-                    l1 = LinearLine(hull_tangent, self.hull[hull_index-1][0], hull_pnt[0], self.sr, color='r').draw()
-                    self.graph_items.extend([l0,l1])
-
+                point_tangent = hull_pnt.tangent(sample)
+                hull_tangent = self.hull[hull_index-1].tangent(hull_pnt)
+                # # Get the tangent line of the new point and the last hull point
+                # point_tangent = tangent(hull_pnt, new_point)
+                # # Get the tangent line of the last hull point and second to last hull point
+                # hull_tangent = tangent(self.hull[hull_index-1], hull_pnt)
 
                 # Get the closest possible t value that is less than the hull
                 # points t value. Since you can't subtract 1/inf to get infinitely
                 # close value to t, I use the sample rate
-                t_close = hull_pnt[0] - self.sr
+                # t_close = hull_pnt[0] - self.sr
+                t_close = hull_pnt.t - self.sr
+
                 if point_tangent(t_close) < hull_tangent(t_close):
                     # hull_pnt must be deleted
                     del self.hull[hull_index]
@@ -220,34 +104,41 @@ class Phase: # this should be called phase
                         # and the old y_max is beind removed
                         self.max_index = -1
 
-                    if self.animate:
-                        Point.delete_at(hull_pnt[0], hull_pnt[1])
-                        # plt.plot(hull_pnt[0], hull_pnt[1], 'r.')
+                    # if self.animate:
+                        # Point.delete_at(hull_pnt[0], hull_pnt[1])
+
+                    if self.animate: plt.plot(hull_pnt.t, hull_pnt.amplitude, 'g.')
+                        # for line in GraphItem.get_all(hull_pnt):
+                        #     line.delete()
                 else:
                     # hull point is valid. Therefore, all previous hull points
                     # must be valid too. Adding new point to hull will result
                     # in valid hull. Can break out of loop now
                     break
 
+
+        hull_size = self.hull_size() # size may have changed from hp removal above
+        if sample.amplitude > self.max_amplitude():
+            # new point is the new highest point. Set max index to last index
+            # which will be the index of new point after being added
+            self.max_index = hull_size
+
+        if self.animate: plt.plot(sample.t, sample.amplitude, 'b.')#, markersize=0.5)
+
         # Finally, add the new point to the hull
-        self.hull.append(new_point)
+        self.hull.append(sample)
 
 
-        if new_point[1] > self.max_amplitude():
-            # new point is the new highest point.
-            # Set max index to last index of the hull
-            self.max_index = self.hull_size() - 1
-
-        # plot the new point if plot mode is on
-        if self.animate:
-            p = Point(new_point[0], new_point[1], color='g')
-            p.draw()
 
     def hull_size(self):
         return len(self.hull)
 
+    def duration(self):
+        return self.hull[-1].t - self.hull[0].t
+
     def shift_detected(self):
         if self.decaying:
+            # If abrupt change in energy, phase is probably over
             return False
         else:
             hull_size = len(self.hull)
@@ -256,21 +147,23 @@ class Phase: # this should be called phase
                 first_hull_point = self.hull[0]
                 last_hull_point = self.hull[-1]
 
-                gain_time = highest_point[0] - first_hull_point[0]
-                decay_time = last_hull_point[0] - highest_point[0]
+                gain_time = highest_point.t - first_hull_point.t
+                decay_time = last_hull_point.t - highest_point.t
                 if decay_time > gain_time:
                     return True
             return False
 
-    def find_phase_shift(self, points):
-        for pnt in points:
-            self.update_hull(pnt)
+    def find(self, samples):
+        for s in samples:
+            self.update_hull(s)
             if self.shift_detected():
-                self.hull = self.hull[:self.max_index+1]
-                return self.hull[self.max_index]
+                if not self.decaying:
+                    self.hull = self.hull[:self.max_index+1]
+                return self.hull[0], self.hull[-1]
+
         raise Exception('Could not find end of phase')
 
-    def get_last_point(self):
+    def get_last_sample(self):
         return self.hull[-1]
 
     def max_amplitude(self):
@@ -278,41 +171,28 @@ class Phase: # this should be called phase
             return 0
         else:
             highest_point = self.hull[self.max_index]
-            return highest_point[1]
+            return highest_point.amplitude
 
     def plot(self):
-        hull_points = map(lambda p: Point(p[0], p[1], color='g').draw(), self.hull)
-        hull_line = LinePlot(self.hull, 'r').draw()
-        end_line = VerticalLine(self.get_last_point()[0], color='r').draw()
-        new_graph_items = [hull_line, end_line] + list(hull_points)
-        self.graph_items.extend(new_graph_items)
+        last_sample = self.get_last_sample()
+        t = last_sample.t
+        amp = last_sample.amplitude
+        plt.plot([t, t],[0,amp],'r--', lw=1)
+        t_vals, amp_vals = Sample.split(self.hull)
+        # t_vals = [p[0] for p in self.hull]
+        # a_vals = [p[1] for p in self.hull]
+        plt.plot(t_vals, amp_vals, 'm--', lw=1)
+        plt.plot(t_vals, amp_vals, 'b.')
 
-    def unplot(self):
-        for item in self.graph_items:
-            item.delete()
 
 def get_2d_signal(amplitudes, sr, plot=False):
     duration = sr * len(amplitudes)
     time_axis = np.arange(0., duration, sr)
     if plot:
-        plt.plot(time_axis, amplitudes)
+        plt.plot(time_axis, amplitudes, color='black')
     return np.column_stack( (time_axis, amplitudes) )
 
-
-def get_outline(signal, plot=False):
-    hull = scipy.spatial.ConvexHull(signal)
-    if plot:
-        # add the first point to the end of vertices to close the outline
-        outline = np.append(hull.vertices, hull.vertices[0])
-        plt.plot(signal[outline,0], signal[outline,1], 'r--', lw=1)
-        plt.plot(signal[outline,0], signal[outline,1], 'g.')
-    # x = list(map(lambda simplex: signal[simplex, 0], hull.simplices))
-    # y = list(map(lambda simplex: signal[simplex, 1], hull.simplices))
-    print(signal[hull.vertices,1])
-    return signal[hull.vertices,0], signal[hull.vertices,1]
-
-
-def find_cross_peaks(amplitudes, sr):
+def find_cross_peaks(amplitudes, sr, pos_only=False):
     peaks = []
     cur_peak = amplitudes[0]
     cur_peak_t = 0
@@ -324,22 +204,23 @@ def find_cross_peaks(amplitudes, sr):
             peak = (cur_peak_t, cur_peak)
             peaks.append(peak)
             positive = pnt_is_positive
-            cur_peak = amp
+            cur_peak = amp if not pos_only else abs(amp)
             cur_peak_t = sr*i
         elif abs(amp) > abs(cur_peak):
             cur_peak_t = sr * i
-            cur_peak = amp
+            cur_peak = amp if not pos_only else abs(amp)
     return peaks
 
 
-def find_peaks(amplitudes, sr):
+def find_change_density(amplitudes, sr, pos_only=False):
     peaks = []
     for i in range(1, len(amplitudes) - 1):
         was_increasing = amplitudes[i] - amplitudes[i-1] > 0
         is_increasing = amplitudes[i+1] - amplitudes[i] > 0
         if was_increasing != is_increasing:
             t = sr * i
-            inflection_point = (t, amplitudes[i])
+            amp = amplitudes[i] if not pos_only else abs(amplitudes[i])
+            inflection_point = (t, amp)
             peaks.append(inflection_point)
     return peaks
 
@@ -386,6 +267,9 @@ def energy(peaks, sr, duration):
     return energy_snapshots
 
 
+def find_phase_change_canidates():
+    return
+
 # Finds frequency segment that repeats (can lower in amplitude)
 def find_repeated_segment():
     return
@@ -416,36 +300,33 @@ if __name__ == '__main__':
     # tempo = librosa.feature.tempogram(y=tempo,sr=sr)
     # print(tempo)
     # eng = energy_entropy(amplitudes, sr)
-    amplitudes = amplitudes[4150::]
+    # amplitudes = amplitudes[4150::]
+
+    #samples = Sample.get_list(amplitudes, sr)
+
     duration = len(amplitudes)*sr
+    # density = find_change_density(amplitudes, sr, pos_only=True)
+    peaks = find_cross_peaks(amplitudes, sr, pos_only=True)
 
+    samples = Sample.get_list_from_points(peaks)
 
-    # HIGH AMOUNTS OF LOW AMPLITUDES CROSS PEAKS IN A FRAME INDICATES
-    peaks = find_cross_peaks(amplitudes, sr)
-    peaks = [(pnt[0], abs(pnt[1])) for pnt in peaks]
-    eng = energy(peaks, sr, duration)
-    # Make all negative amps positive with absolute value
     amplitudes = np.absolute(amplitudes)
     signal = get_2d_signal(amplitudes, sr, plot=True)
 
-
     transient = Phase(sr, False)
-    last_point = transient.find_phase_shift(peaks)
+    first_sample, last_sample = transient.find(samples)
     transient.plot()
-    Point(last_point[0], last_point[1], )
-    decay_start_index = peaks.index(last_point)
-    print('found start index', decay_start_index)
 
-    peaks = peaks[decay_start_index::]
-
+    decay_start_index = samples.index(last_sample)
+    samples = samples[decay_start_index::]
     decay = Phase(sr, True, animate=True)
 
-    for pnt in peaks:
-        decay.update_hull(pnt)
-        input()
+    for s in samples:
+        decay.update_hull(s)
 
-    plt.show()
-
+    # t_axis, amp_axis = Sample.split(Sample.get_list_from_points(density))
+    # plt.plot(t_axis, amp_axis, 'r.', markersize=0.8)
+    input()
     # cross_rates = []
     # amp_sums = []
     # for i in range(len(eng)):
