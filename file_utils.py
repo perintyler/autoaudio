@@ -78,3 +78,14 @@ def get_training_data_dir(label):
 def num_training_files(label):
     dir, data_exists = get_training_data_dir(label)
     return len([fn for fn in os.listdir(dir) if not fn.endswith('.asd')])
+
+
+
+def cut_file(file, seconds): # seconds can be a double
+    cut_point = seconds * 1000
+    sound = AudioSegment.from_file(file)
+
+    first = sound[:cut_point]
+
+    # create a new file "first_half.mp3":
+    first.export("testaudio/split.wav", format="wav")
