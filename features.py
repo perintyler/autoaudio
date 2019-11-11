@@ -51,31 +51,32 @@ def find_cross_peaks(amplitudes, sr, pos_only=False):
     for i in range(1, len(amplitudes)):
         t = sr*i
         if buffer_size != 0:
-            while t - buffer[0] > frame_size:
-                amp = buffer.pop(0)[1]
+            while buffer_size!=0 and t - buffer[0] > frame_size:
+                buffer.pop(0)
                 buffer_size -= 1
+
 
         amp = amplitudes[i]
         pnt_is_positive =  amp > 0
         if positive != pnt_is_positive:
-            peak = (t, cur_peak)
+            peak = (cur_peak_t, cur_peak)
             peaks.append(peak)
             positive = pnt_is_positive
             cur_peak = amp if not pos_only else abs(amp)
-            buffer.append(t)
+            cur_peak_t = t
+            buffer.append(cur_peak_t)
             buffer_size+=1
         elif abs(amp) > abs(cur_peak):
             cur_peak = amp if not pos_only else abs(amp)
-            buffer.append(t)
-            buffer_size+=1
-        density[t] = buffer_size
+            cur_peak_t = t
+        density[t] = buffer_size / num_points_per_frame
     return peaks, density
 
 def find_change_density(amplitudes, sr, pos_only=False):
     density = {}
     buffer = []
     buffer_size = 0
-    num_points_per_frame = 2000
+    num_points_per_frame = 5000
     frame_size = sr*num_points_per_frame
 
     peaks = []
@@ -85,8 +86,8 @@ def find_change_density(amplitudes, sr, pos_only=False):
         t = sr * i
 
         if buffer_size != 0:
-            while t - buffer[0][0] > frame_size:
-                amp = buffer.pop(0)[1]
+            while t - buffer[0] > frame_size:
+                amp = buffer.pop(0)
                 buffer_size -= 1
 
         if was_increasing != is_increasing:
@@ -94,7 +95,7 @@ def find_change_density(amplitudes, sr, pos_only=False):
             inflection_point = (t, amp)
             peaks.append(inflection_point)
 
-            buffer.append(inflection_point)
+            buffer.append(t)
             buffer_size+=1
 
         if t > frame_size:
@@ -111,6 +112,13 @@ def find_repeated_segment():
     # split sound1 in 5-second slices: slices = sound1[::5000]
 # If amplitude does not reach 0 (or baseline amplitude before attack) after a
 # attack starts, then it is not a complete 'note'
+
+def frequency_regression(spectogram):
+    # get columns of spectogram
+    num_rows, num_cols = spectogram.shape
+    # for col_index in num_cols:
+    #     col = spectogram[:,col_index]
+    #
 
 
 # It would be cool to be able to tell if an audio clip contains isolate 'notes'

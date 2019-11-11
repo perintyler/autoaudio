@@ -7,19 +7,17 @@ import librosa.display
 from mpl_toolkits import mplot3d
 
 items = []
-
 lines = []
+points = []
 
 class GraphItem:
-
-    all = []
 
     def __init__(self, points, color, point_type, plt_params={}):
         self.plt_arg = f'{color}{point_type}'
         self.plt_params = plt_params
         self.points = points
         self.drawn = []
-        GraphItem.all.append(self)
+        items.append(self)
 
     def is_drawn(self):
         return len(self.drawn) != 0
@@ -63,7 +61,6 @@ class GraphItem:
 
 
 class Point(GraphItem):
-    all = {}
 
     def __init__(self, x, y, color, point_size=1):
         self.item_type = 'point'
@@ -71,7 +68,7 @@ class Point(GraphItem):
         point_type = '.'
         params = {'markersize': point_size}
         super().__init__(points, color, point_type, plt_params=params)
-        Point.all[(x,y)] = self
+        points.append(self)
 
     @staticmethod
     def delete_at(x, y):
@@ -80,8 +77,6 @@ class Point(GraphItem):
 
 # TODO line plot and linear line should be the same class
 class LinePlot(GraphItem):
-
-    all = []
 
     def __init__(self, points, color='r', dashed=False, linewidth=1):
         self.item_type = 'line'
@@ -93,7 +88,7 @@ class LinePlot(GraphItem):
         # formatted_points = [x_vals, y_vals]
         super().__init__(points, color, point_type, plt_params=params)
 
-        LinePlot.all.append(self)
+        lines.append(self)
 
     @staticmethod
     def draw_function(f, x0, x1, step_size=1, color='r'):
@@ -152,10 +147,10 @@ def spectogram(audio_path, plot=True):
     y, sr = librosa.load(audio_path)
 
     # Convert to log scale (dB). We'll use the peak power (max) as reference.
-    S = librosa.feature.melspectrogram(y, sr=sr, n_mels=128)
+    S = librosa.feature.melspectrogram(y, sr=sr, n_mels=512, hop_length=1)
     log_S = librosa.power_to_db(S, ref=np.max)
     if plot:
-        plt.figure(figsize=(12,4))
+        # plt.figure(figsize=(12,4))
         librosa.display.specshow(log_S, sr=sr, x_axis='time', y_axis='mel')
         plt.title('mel power spectrogram')
         plt.colorbar(format='%+02.0f dB')

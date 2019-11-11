@@ -66,7 +66,7 @@ class Sample:
 
     def __eq__(self, other):
         if isinstance(other, Sample):
-            return self.t == other.t and self.amplitude == other.amplitude
+            return self.t == other.t #and self.amplitude == other.amplitude
         return False
 
 
@@ -110,18 +110,21 @@ class Phase:
     # point requires so
     # https://www.geeksforgeeks.org/dynamic-convex-hull-adding-points-existing-convex-hull/
     def update_hull(self, sample):
-        if self.decaying and sample.t in self.ed:
+        if self.decaying: #self.decaying:# and sample.t in self.inflection_density:
 
-            id = self.inflection_density[sample.t] * 10000
-            cpd = self.cross_peak_density[sample.t] * 10000
-
+            if sample.t in self.inflection_density:
+                id = self.inflection_density[sample.t] * 10000
+                plt.plot(sample.t,id, 'm.', markersize=0.6)
+            if sample.t in self.cross_peak_density:
+                cpd = self.cross_peak_density[sample.t] * 10000
+                plt.plot(sample.t,cpd, 'r.', markersize=0.6)
+            #return
             # lookahead_index = sample.t + 100*self.sr
             # if sample.t >= self.sr:
             #    ded = abs(self.ed[sample.t+self.sr] - ed)
 
                 #plt.plot(sample.t,10000*ded, 'r.')#,markersize=0.3)
-            plt.plot(sample.t,id, 'm.', markersize=0.6)
-            plt.plot(sample.t,cpd, 'r.', markersize=0.6)
+
 
                 #density_range = self.density_max - self.density_min
                 #print(sample.t, density_range)
@@ -216,7 +219,6 @@ class Phase:
                 gain_time = highest_point.t - first_hull_point.t
                 decay_time = last_hull_point.t - highest_point.t
                 if gain_time > min_attack_time and decay_time > gain_time:
-                    print('*', gain_time, decay_time)
                     return True
             return False
 
@@ -273,8 +275,23 @@ if __name__ == '__main__':
     spf = wave.open(file_path)
     sr = spf.getframerate()
     amplitudes = np.fromstring(spf.readframes(-1), 'Int16')
-    print('num amps', len(amplitudes))
     print(f'took {time.time() - timer0} to read wave into array')
+
+    timer0 = time.time()
+
+    # spectogram = visualize.spectogram(file_path, plot=False)
+    # # for hz in range(50, 150, 25): #spectogram.shape[1], 25):
+    #
+    # hz = 150
+    # freq = spectogram[:,hz]
+    # x_step = len(amplitudes) * sr / len(freq)
+    #
+    # x = [i*x_step for i in range(0,len(freq))]
+    # plt.figure(hz/25 - 50)
+    # plt.title(f'{hz} hz')
+    # plt.plot(x, freq) #, c=np.random.rand(3,))
+    input()
+    # print(f'took {time.time() - timer0} to read wave into array')
     # tempo = np.array([float(a) for a in amplitudes])
     # tempo = librosa.feature.tempogram(y=tempo,sr=sr)
     # print(tempo)
@@ -291,10 +308,12 @@ if __name__ == '__main__':
     timer0 = time.time()
     inflections, inflection_density = find_change_density(amplitudes, sr, pos_only=True)
     print(f'took {time.time() - timer0} to get density')
-
+    print('leninflections', len(inflections), 'len peaks', len(cross_peaks))
 
     amplitudes = np.absolute(amplitudes)
     signal = get_2d_signal(amplitudes, sr, plot=True)
+
+    input()
     # inflections = find_change_density(amplitudes, sr, pos_only=True)
 
     # inflections, density = find_change_density(amplitudes, sr, pos_only=True)
@@ -310,44 +329,40 @@ if __name__ == '__main__':
     # print(f'took {time.time() - timer0} to get energy')
     # density = {e[0]:e[1] for e in energy }
 
-
     timer0 = time.time()
-    transient = Phase(sr, False)#s, energy=density)
+    transient = Phase(sr, False)
+    # transient.sities(inflections_density, cross_peak_density)
     first_sample, last_sample = transient.find(samples)
     print(f'took {time.time() - timer0} to find attack')
     transient.plot()
+
     #
     # # t_axis, amp_axis = Sample.split(Sample.get_list_from_points(density))
     # # plt.plot(t_axis, amp_axis, 'r.', markersize=0.8)
-    timer0 = time.time()
     # decay_start_index = transient.index_of_sample(last_sample)
-    samples = Sample.get_list_from_points(inflections)
+    timer0 = time.time()
+    # samples = Sample.get_list_from_points(inflections)
     decay_start_index = samples.index(last_sample)
-    print(f'took {time.time() - timer0} to get first index of decay')
-
     samples = samples[decay_start_index::]
     print(f'took {time.time() - timer0} to splice samples')
 
-    # # samples = Sample.get_list_from_points(inflections)
-    # # decay_start_index = 0
-    # # while samples[decay_start_index].t != last_sample.t: decay_start_index+=1
-    #
-    # #decay_start_index = samples.index(last_sample)
-    # print(len(samples))
-    #
-    # timer0 = time.time()
-    #
-    decay = Phase(sr, True, animate=False, energy=density)
-    #
+    decay = Phase(sr, True, animate=False)
+    decay.set_densities(inflection_density, cross_peak_density)
+
+    print('starting to update decay')
+
+
     for s in samples:
-        decay.update_hull(s, ya=True)
+        decay.update_hull(s)
+    decay.plot()
+
 
     #
     # print(f'took {time.time() - timer0} to find decay')
     # input()
 
-
-    input()
+    input("1")
+    input("2")
     # cross_rates = []
     # amp_sums = []
     # for i in range(len(eng)):
